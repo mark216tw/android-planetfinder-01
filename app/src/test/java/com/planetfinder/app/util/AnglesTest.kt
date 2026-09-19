@@ -16,6 +16,14 @@ class AnglesTest {
         assertEquals(-180.0, signedAngleDelta(180.0, 0.0), 0.0001)
     }
 
+    @Test fun cardinalBearingsMoveRelativeToPhoneHeading() {
+        assertEquals(0.0, relativeBearingDegrees(0.0, 0.0), 0.0001)
+        assertEquals(0.0, relativeBearingDegrees(90.0, 90.0), 0.0001)
+        assertEquals(-90.0, relativeBearingDegrees(0.0, 90.0), 0.0001)
+        assertEquals(90.0, relativeBearingDegrees(180.0, 90.0), 0.0001)
+        assertEquals(20.0, relativeBearingDegrees(10.0, 350.0), 0.0001)
+    }
+
     @Test fun cardinalDirectionUsesEightSectors() {
         assertEquals("北", cardinalDirection(359.0))
         assertEquals("東北", cardinalDirection(45.0))

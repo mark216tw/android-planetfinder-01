@@ -7,6 +7,9 @@ fun normalizeDegrees(value: Double): Double = ((value % 360.0) + 360.0) % 360.0
 fun signedAngleDelta(target: Double, current: Double): Double =
     ((target - current + 540.0) % 360.0) - 180.0
 
+fun relativeBearingDegrees(bearing: Double, heading: Double): Double =
+    signedAngleDelta(bearing, heading)
+
 fun pitchToAimAltitude(pitchRadians: Double): Double =
     Math.toDegrees(-pitchRadians).coerceIn(-90.0, 90.0)
 

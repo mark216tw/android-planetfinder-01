@@ -12,7 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 
-val TaipeiLocation = ObserverLocation(25.0330, 121.5654)
+val TaipeiLocation = ObserverLocation(25.0330, 121.5654, label = "台北", source = LocationSource.DEFAULT)
 
 class LocationProvider(private val context: Context) {
     private val manager = context.getSystemService(LocationManager::class.java)
@@ -57,6 +57,6 @@ class LocationProvider(private val context: Context) {
         longitude = longitude,
         altitudeMeters = if (hasAltitude()) altitude else 0.0,
         label = "目前位置",
-        isFallback = false,
+        source = LocationSource.DEVICE,
     )
 }

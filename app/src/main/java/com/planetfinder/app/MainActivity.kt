@@ -7,15 +7,12 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.activity.compose.setContent
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.planetfinder.app.data.LocationProvider
-import com.planetfinder.app.data.ObserverLocation
-import com.planetfinder.app.data.TaipeiLocation
 import com.planetfinder.app.ui.PlanetFinderApp
+import com.planetfinder.app.ui.PlanetFinderViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,15 +29,19 @@ class MainActivity : ComponentActivity() {
         )
         setContent {
             val provider = remember { LocationProvider(this) }
-            var location by remember { mutableStateOf<ObserverLocation>(TaipeiLocation) }
+            val planetFinderViewModel: PlanetFinderViewModel = viewModel()
             val permissionLauncher = rememberLauncherForActivityResult(
                 ActivityResultContracts.RequestMultiplePermissions()
-            ) { provider.findLocation { location = it } }
+            ) { permissions ->
+                if (permissions.values.any { it }) {
+                    provider.findLocation(planetFinderViewModel::setLocation)
+                }
+            }
 
             PlanetFinderApp(
-                location = location,
-                requestLocation = {
-                    if (provider.hasPermission()) provider.findLocation { location = it }
+                viewModel = planetFinderViewModel,
+                requestDeviceLocation = {
+                    if (provider.hasPermission()) provider.findLocation(planetFinderViewModel::setLocation)
                     else permissionLauncher.launch(
                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
                     )

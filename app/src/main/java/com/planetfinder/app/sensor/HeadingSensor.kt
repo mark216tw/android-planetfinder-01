@@ -6,6 +6,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.os.Build
 import android.view.Surface
 import android.view.WindowManager
 import com.planetfinder.app.data.ObserverLocation
@@ -13,12 +14,23 @@ import com.planetfinder.app.util.normalizeDegrees
 import com.planetfinder.app.util.pitchToAimAltitude
 import kotlin.math.roundToInt
 
+enum class SensorAccuracy(val label: String) {
+    UNAVAILABLE("裝置不支援方向感測器"),
+    INITIALIZING("正在初始化感測器"),
+    UNRELIABLE("精度不可靠，請以 8 字形校準"),
+    LOW("精度偏低，請遠離金屬或磁鐵"),
+    MEDIUM("感測器精度中等"),
+    HIGH("感測器精度良好"),
+}
+
 class HeadingSensor(
     context: Context,
     private val onOrientation: (heading: Float, altitude: Float) -> Unit,
+    private val onAccuracy: (SensorAccuracy) -> Unit,
 ) : SensorEventListener {
     private val sensorManager = context.getSystemService(SensorManager::class.java)
     private val windowManager = context.getSystemService(WindowManager::class.java)
+    private val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) context.display else null
     private val rotationVector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
     private val accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
@@ -27,10 +39,16 @@ class HeadingSensor(
     private var location: ObserverLocation? = null
     private var filteredHeading: Float? = null
     private var filteredAltitude: Float? = null
+    private var accuracy = SensorAccuracy.INITIALIZING
 
     fun updateLocation(value: ObserverLocation) { location = value }
 
     fun start() {
+        if (rotationVector == null && (accelerometer == null || magnetometer == null)) {
+            updateAccuracy(SensorAccuracy.UNAVAILABLE)
+            return
+        }
+        updateAccuracy(SensorAccuracy.INITIALIZING)
         if (rotationVector != null) {
             sensorManager.registerListener(this, rotationVector, SensorManager.SENSOR_DELAY_UI)
         } else {
@@ -64,8 +82,15 @@ class HeadingSensor(
     }
 
     private fun publish(source: FloatArray) {
+        if (accuracy == SensorAccuracy.INITIALIZING) updateAccuracy(SensorAccuracy.MEDIUM)
         val adjusted = FloatArray(9)
-        val (axisX, axisY) = when (windowManager.defaultDisplay.rotation) {
+        val displayRotation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            display?.rotation ?: Surface.ROTATION_0
+        } else {
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.rotation
+        }
+        val (axisX, axisY) = when (displayRotation) {
             Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
             Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
             Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
@@ -97,5 +122,20 @@ class HeadingSensor(
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        if (sensor?.type != Sensor.TYPE_ROTATION_VECTOR && sensor?.type != Sensor.TYPE_MAGNETIC_FIELD) return
+        updateAccuracy(
+            when (accuracy) {
+                SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> SensorAccuracy.HIGH
+                SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> SensorAccuracy.MEDIUM
+                SensorManager.SENSOR_STATUS_ACCURACY_LOW -> SensorAccuracy.LOW
+                else -> SensorAccuracy.UNRELIABLE
+            }
+        )
+    }
+
+    private fun updateAccuracy(value: SensorAccuracy) {
+        accuracy = value
+        onAccuracy(value)
+    }
 }

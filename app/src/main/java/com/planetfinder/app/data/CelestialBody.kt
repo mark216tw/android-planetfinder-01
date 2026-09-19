@@ -31,14 +31,75 @@ data class SkyPosition(
     val magnitude: Double?,
     val riseMillis: Long?,
     val setMillis: Long?,
+    val currentRating: ObservabilityRating,
+    val observationForecast: ObservationForecast,
 ) {
     val isAboveHorizon: Boolean get() = altitude >= 0.0
+    val bestObservation: ObservationSample? get() = observationForecast.bestSample
+}
+
+data class ObservationSample(
+    val timeMillis: Long,
+    val azimuth: Double,
+    val altitude: Double,
+    val sunAltitude: Double,
+    val moonAltitude: Double,
+    val moonIllumination: Double,
+    val sunSeparation: Double,
+    val moonSeparation: Double,
+    val rating: ObservabilityRating,
+)
+
+data class ObservationWindow(
+    val startMillis: Long,
+    val endMillis: Long,
+)
+
+data class ObservationForecast(
+    val period: ObservationPeriod,
+    val samples: List<ObservationSample>,
+    val bestSample: ObservationSample?,
+    val bestWindow: ObservationWindow?,
+    val overallRating: ObservabilityRating,
+)
+
+enum class ObservationPeriod {
+    DAYLIGHT,
+    NIGHT,
+}
+
+enum class ObservabilityLevel(val displayName: String, val rank: Int) {
+    UNAVAILABLE("不可見", 0),
+    DIFFICULT("困難", 1),
+    FAIR("普通", 2),
+    RECOMMENDED("推薦", 3),
+}
+
+enum class TwilightPhase(val displayName: String) {
+    DAYLIGHT("日光"),
+    CIVIL("民用暮光"),
+    NAUTICAL("航海暮光"),
+    ASTRONOMICAL("天文暮光"),
+    DARK("完全暗夜"),
+}
+
+data class ObservabilityRating(
+    val level: ObservabilityLevel,
+    val reasons: List<String>,
+    val equipment: String,
+    val score: Int,
+)
+
+enum class LocationSource(val displayName: String) {
+    DEFAULT("預設位置"),
+    DEVICE("裝置定位"),
+    MANUAL("手動位置"),
 }
 
 data class ObserverLocation(
     val latitude: Double,
     val longitude: Double,
     val altitudeMeters: Double = 0.0,
-    val label: String = "台北（預設）",
-    val isFallback: Boolean = true,
+    val label: String = "台北",
+    val source: LocationSource = LocationSource.DEFAULT,
 )
