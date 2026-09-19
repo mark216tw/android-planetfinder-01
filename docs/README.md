@@ -9,6 +9,7 @@
 | [系統架構](ARCHITECTURE.md) | 系統元件、資料流與模組責任 |
 | [技術文件](TECHNICAL.md) | 技術棧、天文計算、感測器與建置設定 |
 | [系統設計](SYSTEM_DESIGN.md) | 需求、狀態、畫面、錯誤處理及設計決策 |
+| [未來開發建議](FUTURE_DEVELOPMENT.md) | 優先級、產品路線、品質改善與正式發布準備 |
 | [隱私說明](PRIVACY.md) | 定位權限、本機資料及網路行為 |
 | [發行說明](RELEASE.md) | Pre-release 規格、安裝與已知限制 |
 | [第三方套件](THIRD_PARTY.md) | 主要依賴與其開放原始碼授權 |

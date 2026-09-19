@@ -57,6 +57,7 @@ app/build/outputs/apk/prerelease/app-prerelease.apk
 - [系統架構](docs/ARCHITECTURE.md)
 - [技術文件](docs/TECHNICAL.md)
 - [系統設計](docs/SYSTEM_DESIGN.md)
+- [未來開發建議](docs/FUTURE_DEVELOPMENT.md)
 - [隱私說明](docs/PRIVACY.md)
 - [發行說明](docs/RELEASE.md)
 - [第三方套件](docs/THIRD_PARTY.md)
