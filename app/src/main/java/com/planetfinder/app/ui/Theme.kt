@@ -6,6 +6,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.graphics.Color
+import com.planetfinder.app.data.DisplayMode
 
 val Night = Color(0xFF070B1C)
 val DeepBlue = Color(0xFF0D1531)
@@ -50,4 +51,10 @@ fun PlanetFinderTheme(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(colorScheme = if (darkTheme) NightColors else DayColors, content = content)
+}
+
+fun shouldUseDarkTheme(displayMode: DisplayMode, systemDarkTheme: Boolean): Boolean = when (displayMode) {
+    DisplayMode.SYSTEM -> systemDarkTheme
+    DisplayMode.LIGHT -> false
+    DisplayMode.DARK -> true
 }

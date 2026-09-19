@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +45,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -66,6 +69,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
@@ -74,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.TextUnit
 import com.planetfinder.app.data.CelestialBody
+import com.planetfinder.app.data.DisplayMode
 import com.planetfinder.app.data.LocationSource
 import com.planetfinder.app.data.ObservationForecast
 import com.planetfinder.app.data.ObservabilityLevel
@@ -109,14 +116,23 @@ private enum class Tab(val route: String, val title: String, val symbol: String)
 }
 
 @Composable
-fun PlanetFinderApp(viewModel: PlanetFinderViewModel, requestDeviceLocation: () -> Unit) {
-    PlanetFinderTheme {
-        val state by viewModel.uiState.collectAsStateWithLifecycle()
+fun PlanetFinderApp(
+    viewModel: PlanetFinderViewModel,
+    onDarkThemeChanged: (Boolean) -> Unit,
+    requestDeviceLocation: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val systemDarkTheme = isSystemInDarkTheme()
+    val darkTheme = shouldUseDarkTheme(state.displayMode, systemDarkTheme)
+    LaunchedEffect(darkTheme) { onDarkThemeChanged(darkTheme) }
+
+    PlanetFinderTheme(darkTheme = darkTheme) {
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val route = backStackEntry?.destination?.route.orEmpty()
         val selectedTab = Tab.entries.firstOrNull { route == it.route || route.startsWith("${it.route}/") } ?: Tab.Home
         var showLocationDialog by remember { mutableStateOf(false) }
+        var showDisplayModeDialog by remember { mutableStateOf(false) }
 
         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             StarField()
@@ -148,6 +164,7 @@ fun PlanetFinderApp(viewModel: PlanetFinderViewModel, requestDeviceLocation: () 
                                 observationTimeMillis = state.observationTimeMillis,
                                 isLive = state.isLive,
                                 requestLocation = { showLocationDialog = true },
+                                openDisplaySettings = { showDisplayModeDialog = true },
                                 onUseLiveTime = viewModel::useLiveTime,
                                 onShiftTime = viewModel::shiftObservationTime,
                                 onUseTonight = viewModel::useTonight,
@@ -221,6 +238,13 @@ fun PlanetFinderApp(viewModel: PlanetFinderViewModel, requestDeviceLocation: () 
                     },
                 )
             }
+            if (showDisplayModeDialog) {
+                DisplayModeDialog(
+                    selected = state.displayMode,
+                    onSelected = viewModel::setDisplayMode,
+                    onDismiss = { showDisplayModeDialog = false },
+                )
+            }
         }
     }
 }
@@ -269,7 +293,11 @@ private fun StarField() {
 }
 
 @Composable
-private fun ScreenHeader(location: ObserverLocation, requestLocation: (() -> Unit)? = null) {
+private fun ScreenHeader(
+    location: ObserverLocation,
+    requestLocation: (() -> Unit)? = null,
+    openDisplaySettings: (() -> Unit)? = null,
+) {
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -285,6 +313,20 @@ private fun ScreenHeader(location: ObserverLocation, requestLocation: (() -> Uni
             Column(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), horizontalAlignment = Alignment.End) {
                 Text("⌖ ${location.label}", color = MaterialTheme.colorScheme.onSurface, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Text(location.source.displayName, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 9.sp)
+            }
+        }
+        if (openDisplaySettings != null) {
+            Spacer(Modifier.width(8.dp))
+            Surface(
+                modifier = Modifier.size(42.dp)
+                    .semantics { contentDescription = "開啟顯示設定" }
+                    .clickable(onClick = openDisplaySettings),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = .9f),
+                shape = CircleShape,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("⚙", color = MaterialTheme.colorScheme.onSurface, fontSize = 20.sp)
+                }
             }
         }
     }
@@ -394,12 +436,58 @@ private fun LocationDialog(
 }
 
 @Composable
+private fun DisplayModeDialog(
+    selected: DisplayMode,
+    onSelected: (DisplayMode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("顯示模式", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                DisplayMode.entries.forEach { mode ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .selectable(
+                                selected = mode == selected,
+                                role = Role.RadioButton,
+                                onClick = { onSelected(mode) },
+                            )
+                            .semantics { contentDescription = "${mode.displayName}顯示模式" }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = mode == selected, onClick = null)
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(mode.displayName, fontWeight = FontWeight.Bold)
+                            Text(
+                                when (mode) {
+                                    DisplayMode.SYSTEM -> "跟隨裝置設定"
+                                    DisplayMode.LIGHT -> "固定使用淺色外觀"
+                                    DisplayMode.DARK -> "固定使用深色外觀"
+                                },
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 12.sp,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("完成") } },
+    )
+}
+
+@Composable
 private fun HomeScreen(
     positions: List<SkyPosition>,
     location: ObserverLocation,
     observationTimeMillis: Long,
     isLive: Boolean,
     requestLocation: () -> Unit,
+    openDisplaySettings: () -> Unit,
     onUseLiveTime: () -> Unit,
     onShiftTime: (Int) -> Unit,
     onUseTonight: () -> Unit,
@@ -408,7 +496,7 @@ private fun HomeScreen(
 ) {
     val best = positions.filter { it.isAboveHorizon }.maxByOrNull { it.altitude } ?: positions.first()
     LazyColumn(contentPadding = PaddingValues(bottom = 132.dp)) {
-        item { ScreenHeader(location, requestLocation) }
+        item { ScreenHeader(location, requestLocation, openDisplaySettings) }
         item {
             TimeControls(observationTimeMillis, isLive, onUseLiveTime, onShiftTime, onUseTonight)
         }

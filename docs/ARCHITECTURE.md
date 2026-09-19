@@ -14,6 +14,7 @@ flowchart TD
     UI --> Sensor[HeadingSensor]
     VM --> Favorites[FavoritesStore]
     VM --> Locations[LocationStore]
+    VM --> Display[DisplayModeStore]
     Main --> Location[LocationProvider]
     Location --> AndroidLocation[Android LocationManager]
     Astro --> Engine[Astronomy Engine]
@@ -34,6 +35,7 @@ flowchart TD
 | `HeadingSensor` | 真北方位、手機仰角、螢幕旋轉修正與讀值平滑 |
 | `FavoritesStore` | 使用 SharedPreferences 保存收藏 ID |
 | `LocationStore` | 保存最後觀測位置及位置來源 |
+| `DisplayModeStore` | 保存系統、淺色或深色顯示模式 |
 | `Angles` | 角度正規化、最短轉向與仰角提示等純函式 |
 
 ## 資料流

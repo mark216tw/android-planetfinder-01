@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.planetfinder.app.data.AstronomyRepository
+import com.planetfinder.app.data.DisplayMode
+import com.planetfinder.app.data.DisplayModeStore
 import com.planetfinder.app.data.FavoritesStore
 import com.planetfinder.app.data.LocationStore
 import com.planetfinder.app.data.ObserverLocation
@@ -25,15 +27,18 @@ data class PlanetFinderUiState(
     val observationTimeMillis: Long = System.currentTimeMillis(),
     val isLive: Boolean = true,
     val isCalculating: Boolean = true,
+    val displayMode: DisplayMode = DisplayMode.SYSTEM,
 )
 
 class PlanetFinderViewModel(application: Application) : AndroidViewModel(application) {
     private val favoritesStore = FavoritesStore(application)
     private val locationStore = LocationStore(application)
+    private val displayModeStore = DisplayModeStore(application)
     private val _uiState = MutableStateFlow(
         PlanetFinderUiState(
             location = locationStore.load(),
             favorites = favoritesStore.load(),
+            displayMode = displayModeStore.load(),
         )
     )
     val uiState: StateFlow<PlanetFinderUiState> = _uiState.asStateFlow()
@@ -62,6 +67,11 @@ class PlanetFinderViewModel(application: Application) : AndroidViewModel(applica
         val favorites = _uiState.value.favorites.let { if (bodyId in it) it - bodyId else it + bodyId }
         favoritesStore.save(favorites)
         _uiState.update { it.copy(favorites = favorites) }
+    }
+
+    fun setDisplayMode(displayMode: DisplayMode) {
+        displayModeStore.save(displayMode)
+        _uiState.update { it.copy(displayMode = displayMode) }
     }
 
     fun useLiveTime() {

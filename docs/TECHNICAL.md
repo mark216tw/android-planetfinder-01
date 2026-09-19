@@ -65,7 +65,13 @@ APP 宣告 `ACCESS_COARSE_LOCATION` 與 `ACCESS_FINE_LOCATION`，只在使用者
 
 ## 本機資料
 
-收藏資料位於名為 `favorites` 的 SharedPreferences；位置位於 `observer_location`。目前沒有帳號、資料庫、雲端同步或遙測服務。
+收藏資料位於名為 `favorites` 的 SharedPreferences；位置位於 `observer_location`；顯示模式位於 `display_settings`。目前沒有帳號、資料庫、雲端同步或遙測服務。
+
+## 顯示模式
+
+`DisplayMode` 提供 `SYSTEM`、`LIGHT` 與 `DARK`。ViewModel 啟動時同步載入保存值，因此第一個 Compose 畫面即可使用正確主題；無保存值或值無效時回退至 `SYSTEM`。
+
+選擇變更後會立即更新 StateFlow。`PlanetFinderApp` 將系統模式與 `isSystemInDarkTheme()` 合併為實際深淺色，再套用 Material 3 色彩並通知 Activity 更新 Edge-to-edge 狀態列及導覽列圖示。顯示模式變更不會觸發天文資料重算。
 
 ## Build Types
 

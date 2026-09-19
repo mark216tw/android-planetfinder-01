@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
 
             PlanetFinderApp(
                 viewModel = planetFinderViewModel,
+                onDarkThemeChanged = ::applySystemBars,
                 requestDeviceLocation = {
                     if (provider.hasPermission()) provider.findLocation(planetFinderViewModel::setLocation)
                     else permissionLauncher.launch(
@@ -48,5 +49,15 @@ class MainActivity : ComponentActivity() {
                 },
             )
         }
+    }
+
+    private fun applySystemBars(darkTheme: Boolean) {
+        val background = if (darkTheme) 0xFF070B1C.toInt() else 0xFFF3F6FF.toInt()
+        val style = if (darkTheme) {
+            SystemBarStyle.dark(background)
+        } else {
+            SystemBarStyle.light(background, background)
+        }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 }
