@@ -61,4 +61,17 @@ class MainActivityTest {
 
         composeRule.onNodeWithContentDescription("系統顯示模式").performClick()
     }
+
+    @Test fun recommendedBodyOpensDetailScreen() {
+        composeRule.waitUntil(timeoutMillis = 30_000) {
+            composeRule.onAllNodesWithText("此刻，在你頭頂").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithContentDescription("查看推薦星體詳細資料").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 10_000) {
+            composeRule.onAllNodesWithText("今日觀測").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("今日觀測").assertIsDisplayed()
+    }
 }

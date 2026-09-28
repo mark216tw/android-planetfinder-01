@@ -502,9 +502,17 @@ private fun HomeScreen(
         }
         item {
             Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-                Text("此刻，在你頭頂", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, letterSpacing = 2.sp)
-                Text(best.body.name, color = MaterialTheme.colorScheme.onBackground, fontSize = 48.sp, fontWeight = FontWeight.Black)
-                Text("${best.body.englishName}  ·  仰角 ${best.altitude.degree()}", color = MaterialTheme.colorScheme.tertiary)
+                Column(
+                    Modifier.fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onOpen(best) }
+                        .semantics { contentDescription = "查看推薦星體詳細資料" }
+                        .padding(vertical = 4.dp),
+                ) {
+                    Text("此刻，在你頭頂", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp, letterSpacing = 2.sp)
+                    Text(best.body.name, color = MaterialTheme.colorScheme.onBackground, fontSize = 48.sp, fontWeight = FontWeight.Black)
+                    Text("${best.body.englishName}  ·  仰角 ${best.altitude.degree()}", color = MaterialTheme.colorScheme.tertiary)
+                }
                 Spacer(Modifier.height(18.dp))
                 Button(
                     onClick = { onFind(best) },
